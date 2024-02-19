@@ -175,6 +175,113 @@ def enviar_sudoku(sudoku_info):
         print("Error al enviar correo electrónico:", ex)
         return jsonify({"error": str(ex)}), 500
 
+def verificar_cuadrante(sudoku, fila, numero):
+    fila_sector = fila // 3
+
+    for i in range(fila_sector * 3, (fila_sector + 1) * 3):
+        for j in range((fila % 3) * 3, (fila % 3 + 1) * 3):
+            if sudoku[i]["columnas"][j // 3][j % 3] == numero:
+                return False
+    return True
+
+
+def generar_html_sudoku_bloque(sudoku, bloque_verificar):
+    sudoku_array = [[0] * 9 for _ in range(9)]
+
+    for x in range(9):
+        for i in range(3):
+            for j in range(3):
+                if isinstance(sudoku[x]["columnas"][i][0], list):
+                    sudoku_array[x][3 * i + j] = sudoku[x]["columnas"][i][0][j]
+                else:
+                    sudoku_array[x][3 * i + j] = sudoku[x]["columnas"][i][j]
+
+    # Generar la tabla HTML
+    tabla_html = f"""
+    <table style="border-collapse: collapse; border: 2px solid #333;">
+    """
+    for fila_index, fila in enumerate(sudoku_array):
+        tabla_html += "<tr>"
+        for columna_index, celda in enumerate(fila):
+            estilo = 'width: 40px; height: 40px; text-align: center; border: 1px solid #999;'
+            bloque_actual = (fila_index // 3) * 3 + (columna_index // 3)
+            if bloque_actual == bloque_verificar:
+                estilo += 'background-color: yellow;'  # Cambiar el fondo a amarillo para resaltar el bloque 3x3
+            tabla_html += f'<td style="{estilo}">'
+            tabla_html += f'<input type="text" style="width: 100%; height: 100%; border: none; background-color: transparent; font-size: 16px; text-align: center;" value="{celda}">'
+            tabla_html += "</td>"
+            if (columna_index + 1) % 3 == 0 and columna_index != 8:
+                tabla_html += '<td style="border: none; width: 5px;"></td>'  # Añadir celda vacía para separar cuadrantes horizontalmente
+        tabla_html += "</tr>"
+        if (fila_index + 1) % 3 == 0 and fila_index != 8:
+            tabla_html += '<tr style="border: none;"><td colspan="9" style="border: none; height: 5px;"></td></tr>'  # Añadir fila vacía para separar cuadrantes verticalmente
+    tabla_html += "</table>"
+
+    return tabla_html
+
+
+def enviar_sudoku_bloque(sudoku_info):
+    try:
+        sudoku = sudoku_info["sudoku"]
+        fila = sudoku_info["fila"]
+        numero = sudoku_info["numero"]
+
+        connection_string = os.environ.get("CONNECTION_STRING")
+        client = EmailClient.from_connection_string(connection_string)
+        sudoku_html = generar_html_sudoku_bloque(sudoku_info["sudoku"], fila)
+
+        # Determinar si se puede colocar el número en la fila y columna especificadas
+
+        if verificar_cuadrante(sudoku, fila, numero):
+            mensaje_validacion = f'Se puede colocar el número {numero} en el cuadrante {fila}'
+            status_code = 200
+        else:
+            mensaje_validacion = f'No se puede colocar el número {numero} en el cuadrante {fila}'
+            status_code = 400
+
+        # Generar el contenido del correo electrónico con el Sudoku y el mensaje de validación
+        body_email = f"""
+        <html>
+        <head>
+            <style>
+                table {{ border-collapse: collapse; border: 2px solid #333; }}
+                td {{ width: 40px; height: 40px; text-align: center; border: 1px solid #999; }}
+                input {{ width: 100%; height: 100%; border: none; background-color: transparent; font-size: 16px; text-align: center; }}
+            </style>
+        </head>
+        <body>
+            <p>{mensaje_validacion}</p>
+            {sudoku_html}
+        </body>
+        </html>
+        """
+
+        # Configurar el mensaje de correo electrónico
+        message = {
+            "senderAddress": os.environ.get("SENDER_ADDRESS"),
+            "recipients": {
+                "to": [{"address": sudoku_info["address"]}],
+            },
+            "content": {
+                "subject": sudoku_info["subject"],
+                "html": body_email,
+            }
+        }
+
+        # Enviar el correo electrónico
+        poller = client.begin_send(message)
+        result = poller.result()
+
+        print("Correo electrónico enviado correctamente.")
+
+        return jsonify({'mensaje': mensaje_validacion}), status_code
+
+    except Exception as ex:
+        print("Error al enviar correo electrónico:", ex)
+        return jsonify({"error": str(ex)}), 500
+
+
+
 
 @app.route('/sudoku/ver', methods=['GET'])
 def mostrar_sudoku():
@@ -209,6 +316,26 @@ def validar_movimiento():
     else:
         return jsonify({'mensaje': f'No se puede colocar el número {numero} en la fila {fila} y columna {columna}'}), 400
 
+@app.route('/validar/cuadrante', methods=['POST'])
+def validar_cuadrante():
+    """
+    Valida un movimiento en el Sudoku y envía el Sudoku por correo electrónico.
+    """
+    data = request.get_json()
+
+    sudoku = data.get('sudoku')
+    fila = data.get('fila')
+    numero = data.get('numero')
+
+    if sudoku is None or fila is None or numero is None:
+        return jsonify({'error': 'Datos de entrada incompletos'}), 400
+
+    enviar_sudoku_bloque(data)
+
+    if verificar_cuadrante(sudoku, fila, numero):
+        return jsonify({'mensaje': f'Se puede colocar el número {numero} en la fila {fila}'}), 200
+    else:
+        return jsonify({'mensaje': f'No se puede colocar el número {numero} en la fila {fila}'}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
