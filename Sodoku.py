@@ -62,19 +62,6 @@ def verificar_columna(sudoku, columna, numero):
                 return False
     return True
 
-#ESTA FUNCIÓN TODAVIA NO SE ESTA USANDO
-"""
-def verificar_cuadrante(sudoku, fila, columna, numero):
-    fila_sector = fila // 3
-    columna_sector = columna // 3
-
-    for i in range(fila_sector * 3, (fila_sector + 1) * 3):
-        for j in range(columna_sector * 3, (columna_sector + 1) * 3):
-            if sudoku[i]["columnas"][j // 3][j % 3] == numero:
-                return False
-"""
-
-
 def generar_html_sudoku(sudoku, fila_verificar, columna_verificar):
     sudoku_array = [[0] * 9 for _ in range(9)]
     control = 0

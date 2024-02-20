@@ -19,19 +19,19 @@ Este proyecto consta de un servidor Flask que ofrece dos endpoints principales:
 
 1. Clona el repositorio desde GitHub:
 
-    ```bash
+    ```shell
     git clone https://github.com/daneralejandro03/Sudoku.git
     ```
 
 2. Accede al directorio del proyecto:
 
-    ```bash
+    ```shell
     cd tu_proyecto
     ```
 
 3. Crea un entorno virtual (opcional pero recomendado):
 
-    ```bash
+    ```shell
     virtualenv venv
     ```
 
@@ -39,19 +39,19 @@ Este proyecto consta de un servidor Flask que ofrece dos endpoints principales:
 
     - En Windows:
 
-        ```bash
+        ```shell
         venv\Scripts\activate
         ```
 
     - En macOS y Linux:
 
-        ```bash
+        ```shell
         source venv/bin/activate
         ```
 
 5. Instala las dependencias del proyecto:
 
-    ```bash
+    ```shell
     pip install -r requirements.txt
     ```
 
@@ -61,7 +61,7 @@ Este proyecto consta de un servidor Flask que ofrece dos endpoints principales:
 
 7. Ejecuta el proyecto:
 
-    ```bash
+    ```shell
     python Sudoku.py
     ```
    
