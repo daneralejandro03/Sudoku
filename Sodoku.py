@@ -42,6 +42,9 @@ def validar_sudoku(sudoku, fila, columna, numero):
     if not verificar_columna(sudoku, columna, numero):
         return False
 
+    if not verificar_cuadrante(sudoku, fila, numero):
+        return False
+
     return True
 
 def verificar_fila(sudoku, fila, numero):
